@@ -12,7 +12,7 @@ venv/
 env/
 .venv/
 wandb/
-outputs/
+outputs/checkpoints/
 data/OCT*
 *.ckpt
 *.pth
