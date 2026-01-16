@@ -22,24 +22,14 @@ Per-class performance on the validation set:
 ## Visualizations
 
 ### Grad-CAM Interpretability
-The model's attention regions visualized using Gradient-weighted Class Activation Mapping, showing which areas of the retinal scan influenced the classification decision. The model correctly focuses on pathologically relevant structures: subretinal fluid (CNV), intraretinal cysts (DME), drusen deposits (DRUSEN), and normal foveal architecture (NORMAL).
+The model's attention regions visualized using Gradient-weighted Class Activation Mapping. The model correctly focuses on pathologically relevant structures: subretinal fluid (CNV), intraretinal cysts (DME), drusen deposits (DRUSEN), and normal foveal architecture (NORMAL).
 
 ![Grad-CAM](outputs/evaluation/gradcam_samples.png)
-
-### Error Analysis
-With 99.6% accuracy, only 8 images were misclassified. Here are all the errors with their predicted vs. true labels:
-
-![Error Analysis](outputs/evaluation/error_analysis.png)
 
 ### Confidence Distribution
 The model shows high confidence on correct predictions and lower confidence on errors, indicating well-calibrated uncertainty:
 
 ![Confidence Distribution](outputs/evaluation/confidence_distribution.png)
-
-### Challenging Cases
-Correctly classified images where the model was least confident—these edge cases reveal the boundaries of the learned representations:
-
-![Hard Examples](outputs/evaluation/hard_examples.png)
 
 ## Architecture
 
@@ -97,6 +87,10 @@ retinal-oct-classifier/
     ├── checkpoints/
     └── evaluation/
 ```
+
+## Pretrained Model
+
+The trained model is available on Hugging Face: [tomalmog/oct-retinal-classifier](https://huggingface.co/tomalmog/oct-retinal-classifier)
 
 ## References
 
