@@ -1,0 +1,206 @@
+\documentclass[10pt,a4paper]{article}
+
+% Packages
+\usepackage[margin=0.85in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[numbers]{natbib}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+% Title
+\title{\textbf{Retinal OCT Disease Classification Using Deep Learning}\\[0.5em]
+\large EfficientNet-B3 Transfer Learning for Automated Diagnosis}
+\author{Tom Almog\\
+\small University of Waterloo\\
+\small \href{mailto:talmog@uwaterloo.ca}{talmog@uwaterloo.ca}\\[0.5em]
+\small \href{https://github.com/tomalmog/retinal-oct-classifier}{github.com/tomalmog/retinal-oct-classifier}
+}
+\date{January 2025}
+
+\begin{document}
+
+\maketitle
+
+%===================================
+% ABSTRACT
+%===================================
+\begin{abstract}
+Optical Coherence Tomography (OCT) is a critical imaging modality for diagnosing retinal diseases, but manual interpretation requires specialized expertise and is time-consuming. This work presents a deep learning approach for automated classification of OCT images into four categories: Choroidal Neovascularization (CNV), Diabetic Macular Edema (DME), Drusen, and Normal. Using transfer learning with EfficientNet-B3 and a custom classification head, the model achieves \textbf{99.6\% accuracy} on the held-out test set. The system includes Grad-CAM visualizations for interpretability, making it suitable for clinical decision support. Code and trained weights are publicly available.
+\end{abstract}
+
+%===================================
+% 1. INTRODUCTION
+%===================================
+\section{Introduction}
+
+Age-related Macular Degeneration (AMD) and Diabetic Retinopathy are leading causes of vision loss worldwide, affecting over 200 million people globally \cite{wong2014global}. Optical Coherence Tomography (OCT) provides high-resolution cross-sectional images of the retina, enabling early detection of pathological changes. However, the growing volume of OCT scans and shortage of trained ophthalmologists creates a bottleneck in healthcare delivery.
+
+Deep learning has demonstrated remarkable success in medical image analysis, often matching or exceeding expert-level performance \cite{kermany2018identifying}. This project develops an automated OCT classification system with three primary objectives:
+
+\begin{enumerate}[noitemsep]
+    \item Achieve high accuracy across four diagnostic categories
+    \item Provide interpretable predictions via attention visualization
+    \item Create a deployable model with public weights for reproducibility
+\end{enumerate}
+
+%===================================
+% 2. METHODS
+%===================================
+\section{Methods}
+
+\subsection{Dataset}
+
+The model was trained on the Kermany2018 OCT dataset \cite{kermany2018identifying}, comprising approximately 84,000 OCT images from 4,686 patients. Images are labeled into four classes:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{CNV}: Choroidal Neovascularization (wet AMD)
+    \item \textbf{DME}: Diabetic Macular Edema
+    \item \textbf{DRUSEN}: Early-stage AMD
+    \item \textbf{NORMAL}: Healthy retina
+\end{itemize}
+
+The data was split into training (80\%) and validation (20\%) sets using stratified sampling to maintain class distribution. A separate held-out test set of 968 images (242 per class) was used for final evaluation.
+
+\subsection{Model Architecture}
+
+The classifier employs \textbf{EfficientNet-B3} \cite{tan2019efficientnet} as the backbone, pretrained on ImageNet. EfficientNet uses compound scaling to balance network depth, width, and resolution, achieving strong performance with fewer parameters than alternatives like ResNet.
+
+The backbone features are processed through a custom classification head:
+\begin{equation}
+    \text{Head}: \text{GAP} \rightarrow \text{Dropout}(0.3) \rightarrow \text{FC}(1536 \rightarrow 512) \rightarrow \text{ReLU} \rightarrow \text{Dropout}(0.15) \rightarrow \text{FC}(512 \rightarrow 4)
+\end{equation}
+
+where GAP denotes Global Average Pooling and FC denotes fully connected layers. Dropout regularization prevents overfitting to the training distribution.
+
+\subsection{Training Configuration}
+
+Training was conducted using PyTorch Lightning with the following configuration:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Hyperparameter} & \textbf{Value} \\
+\midrule
+Optimizer & AdamW \\
+Learning Rate & $1 \times 10^{-4}$ \\
+Weight Decay & 0.01 \\
+Scheduler & Cosine Annealing \\
+Warmup Epochs & 2 \\
+Total Epochs & 20 \\
+Batch Size & 32 \\
+Mixed Precision & FP16 \\
+Gradient Clipping & 1.0 \\
+\bottomrule
+\end{tabular}
+\caption{Training hyperparameters}
+\end{table}
+
+\subsection{Data Augmentation}
+
+To improve generalization and simulate real-world variation, the following augmentations were applied during training:
+
+\begin{itemize}[noitemsep]
+    \item Horizontal flip ($p=0.5$)
+    \item Random rotation ($\pm 15^\circ$, $p=0.5$)
+    \item Brightness/contrast adjustment ($\pm 0.2$, $p=0.5$)
+    \item Gaussian noise ($\sigma \in [0.02, 0.1]$, $p=0.3$)
+    \item Gaussian blur (kernel $\in [3,5]$, $p=0.2$)
+\end{itemize}
+
+All images were resized to $224 \times 224$ pixels and normalized using ImageNet statistics.
+
+%===================================
+% 3. RESULTS
+%===================================
+\section{Results}
+
+\subsection{Classification Performance}
+
+The model achieves strong performance across all metrics on the held-out test set:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{Support} \\
+\midrule
+CNV & 98.4\% & 100.0\% & 99.2\% & 242 \\
+DME & 100.0\% & 100.0\% & 100.0\% & 242 \\
+DRUSEN & 100.0\% & 98.4\% & 99.2\% & 242 \\
+NORMAL & 100.0\% & 100.0\% & 100.0\% & 242 \\
+\midrule
+\textbf{Macro Avg} & \textbf{99.6\%} & \textbf{99.6\%} & \textbf{99.6\%} & 968 \\
+\bottomrule
+\end{tabular}
+\caption{Per-class classification metrics on the test set}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.38\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../outputs/confusion_matrix.png}
+        \caption{Confusion matrix}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.38\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../outputs/roc_curves.png}
+        \caption{ROC curves (AUC $\geq$ 0.99)}
+    \end{subfigure}
+    \caption{(a) Normalized confusion matrix showing minimal misclassification. (b) ROC curves with near-perfect AUC.}
+\end{figure}
+
+\subsection{Model Interpretability}
+
+Gradient-weighted Class Activation Mapping (Grad-CAM) \cite{selvaraju2017grad} visualizes which regions influence predictions. The attention maps (Figure 2) confirm the model focuses on clinically meaningful regions---subretinal fluid (CNV), intraretinal cysts (DME), drusen deposits (DRUSEN)---providing evidence that learned features align with diagnostic criteria.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.68\textwidth]{../outputs/gradcam_samples.png}
+    \caption{Grad-CAM visualizations highlighting pathologically relevant regions for each class.}
+\end{figure}
+
+\vspace{-0.5em}
+\section{Discussion and Conclusion}
+
+This work demonstrates that transfer learning with EfficientNet-B3 achieves 99.6\% accuracy on retinal OCT classification with interpretable predictions. \textbf{Limitations:} trained on a single OCT device type; intended for research only. \textbf{Code/weights:} \href{https://github.com/tomalmog/retinal-oct-classifier}{GitHub} | \href{https://huggingface.co/tomalmog/oct-retinal-classifier}{HuggingFace}
+
+%===================================
+% REFERENCES
+%===================================
+{\small
+\bibliographystyle{plainnat}
+\begin{thebibliography}{9}
+
+\bibitem{kermany2018identifying}
+Kermany, D.S., et al. Identifying medical diagnoses and treatable diseases by image-based deep learning. \textit{Cell}, 172(5), 2018.
+
+\bibitem{tan2019efficientnet}
+Tan, M., Le, Q. EfficientNet: Rethinking model scaling for CNNs. \textit{ICML}, 2019.
+
+\bibitem{selvaraju2017grad}
+Selvaraju, R.R., et al. Grad-CAM: Visual explanations from deep networks. \textit{ICCV}, 2017.
+
+\bibitem{wong2014global}
+Wong, W.L., et al. Global prevalence of AMD and disease burden projection. \textit{Lancet Global Health}, 2(2), 2014.
+
+\end{thebibliography}
+}
+
+\end{document}

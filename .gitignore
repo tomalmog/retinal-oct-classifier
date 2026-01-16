@@ -18,3 +18,26 @@ data/OCT*
 *.pth
 *.tar.gz
 .ipynb_checkpoints/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.synctex.gz
+
+# HuggingFace directory (uploaded separately to HF Hub)
+huggingface/
+
+# Old/redundant visualizations (keeping only the informative ones)
+outputs/confusion_matrix.png
+outputs/roc_curves.png
+outputs/class_distribution.png
+outputs/classification_report.txt
+
+# Duplicate outputs in root (keep evaluation/ versions)
+outputs/*.png
+outputs/*.txt
+!outputs/evaluation/
